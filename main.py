@@ -22,81 +22,50 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 # OAuth2 scheme for protected routes
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
+
 # Define the data model for user input
 class UserData(BaseModel):
-    id : int
+    id: int
     name: str
     email: str
     number: str
     password: str
 
 class Dashboard(BaseModel):
-    UTC_Time: int
-    INS_Pram_Valid: int
-    Baro_Altitude_Valid: int
-    Radio_HI_Valid: int
-    GPS_Data_Valid: int
-    Ac_On_GND_Status: int
-    CMDS_Presence: int
-    TrueHeading_pi_rad: int
-    PitchAngle_pi_rad: int
-    RollAngle_pi_rad: int
-    PresentPosLatitude: int
-    PresentPosLangitude: int
-    XVelocity:  int
-    YVelocity: int
-    ZVelocity: int
-    PitchRate_pi_rad_s: int
-    RollRate_pi_rad_s: int
-    YawRate_pi_rad_s: int
-    RadioHeight_m: int
-    BaroAltitude: int
-    GPS_Yday: int
-    GPS_Hour: int
-    GPS_minutes: int
-    GPS_Seconds: int
-
-# class Dashboard(Base):
-#     __tablename__ = 'dashboard'
-#     UTC_Time = Column(datetime, default=datetime.utcnow)
-
+    id : int
+    Latitude : int
+    Longitude : int
+    Altitude : int
+    Roll : int
+    Speed: int
+    Pitch: int
+    Yaw: int
+    Az: int
+    EI: int
 
 
 class User(Base):
     __tablename__  = 'usertable'
-    id = Column(Integer, primary_key= True)
+    id = Column(Integer, primary_key= True,autoincrement=True)
     name = Column(String(100))
     email = Column(String(100))
     number = Column(String(100))
     password = Column(String(50))
 
-class Dashboard(Base):
-    __tablename__ = 'dashboard'
-    id = Column(Integer, primary_key= True)
-    UTC_Time = Column(Integer)
-    INS_Pram_Valid = Column(Integer)
-    Baro_Altitude_Valid = Column(Integer)
-    Radio_HI_Valid = Column(Integer)
-    GPS_Data_Valid = Column(Integer)
-    Ac_On_GND_Status = Column(Integer)
-    CMDS_Presence = Column(Integer)
-    TrueHeading_pi_rad = Column(Integer)
-    PitchAngle_pi_rad = Column(Integer)
-    RollAngle_pi_rad = Column(Integer)
-    PresentPosLatitude = Column(Integer)
-    PresentPosLangitude = Column(Integer)
-    XVelocity = Column(Integer)
-    YVelocity = Column(Integer)
-    ZVelocity = Column(Integer)
-    PitchRate_pi_rad_s = Column(Integer)
-    RollRate_pi_rad_s = Column(Integer)
-    YawRate_pi_rad_s = Column(Integer)
-    RadioHeight_m = Column(Integer)
-    BaroAltitude = Column(Integer)
-    GPS_Yday = Column(Integer)
-    GPS_Hour = Column(Integer)
-    GPS_minutes = Column(Integer)
-    GPS_Seconds = Column(Integer)
+class Dashboard_table(Base):
+    __tablename__ = 'dashboardtable'
+    id = Column(Integer, primary_key= True,autoincrement=True)
+    Latitude = Column(Integer)
+    Longitude = Column(Integer)
+    Altitude = Column(Integer)
+    Roll = Column(Integer)
+    Speed = Column(Integer)
+    Pitch = Column(Integer)
+    Yaw = Column(Integer)
+    Az = Column(Integer)
+    EI = Column(Integer)
+
+Base.metadata.create_all(engine)
 
 def get_db():
     db = SessionLocal()
@@ -147,7 +116,7 @@ def get_access_user(token: str):
         raise HTTPException(status_code=404, detail='User Not found')
     return user
 
-@app.get("/protected")
+@app.get("/protected/")
 def protected_route(user: UserData = Depends(get_access_user)):
     try:
         
@@ -170,11 +139,19 @@ async def create_user(user: UserData, db: Session = Depends(get_db)):
             db.refresh(user_db)
             return {'detail':f"User Created successfully"}
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=f"Error occured {str(e)}") 
     
-# @app.post("/createdashboard/")
-# async def create_dashboard(data : Dashboard, db: Session = Depends(get_db)):
-#     pass
+@app.post("/createdashboard/")
+async def create_dashboard(data : Dashboard, db: Session = Depends(get_db)):
+    try:
+        dashboard = Dashboard_table(**data.dict())
+        db.add(dashboard)
+        db.commit()
+        db.refresh(dashboard)
+        return {'detail': f"Dashboard created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occured: {str(e)}")
   
 @app.delete("/delete/{user_id}")
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
@@ -198,4 +175,3 @@ async def get_user(user_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-Base.metadata.create_all(engine)
